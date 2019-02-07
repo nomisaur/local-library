@@ -5,6 +5,8 @@ var BookInstance = require('../models/bookinstance');
 
 var async = require('async');
 
+const myTools = require('../modules/myTools');
+
 const {body, validationResult} = require('express-validator/check');
 const {sanitizeBody} = require('express-validator/filter');
 
@@ -40,10 +42,10 @@ exports.book_list = function(req, res, next) {
     // do i need to populate author because it is a reference to another collection????
     Book.find({}, 'title author')
     .populate('author')
-    .sort([['title', 'ascending']])
     .exec(function (err, list_books) {
         if (err) { return next(err); }
         // Successful, so render
+        list_books = myTools.sortObjectsByValue(list_books, 'title');
         res.render('book_list', {title: 'Book List', book_list: list_books});
     });
 };
@@ -84,7 +86,8 @@ exports.book_create_get = function(req, res, next) {
         },
     }, function (err, results) {
         if (err) {return next(err)}
-        results.genres = results.genres.sort((a,b) => a.name.localeCompare(b.name));
+        results.authors = myTools.sortObjectsByValue(results.authors, 'name');
+        results.genres = myTools.sortObjectsByValue(results.genres, 'name');
         res.render('book_form', {title: 'Create Book', authors: results.authors, genres: results.genres});
     });
 };
@@ -139,6 +142,8 @@ exports.book_create_post = [
                         results.genres[i].checked = 'true';
                     }
                 }
+                results.authors = myTools.sortObjectsByValue(results.authors, 'name');
+                results.genres = myTools.sortObjectsByValue(results.genres, 'name');
                 res.render('book_form', {title: 'Create Book', authors: results.authors, genres: results.genres, book: book, errors: errors.array()});
             });
             return;
@@ -195,16 +200,14 @@ exports.book_delete_post = function(req, res, next) {
             }
         }
         if (results.bookinstances.length > 0) {
-            // Book has instances. Render in same way as for GET route.
-            res.render('book_delete', {title: 'Delete Author', book: results.book, bookinstances: results.bookinstances});
-            return;
-        } else {
-            // Book has no instances. Delete object and redirect to the list of books.
-            Book.findByIdAndRemove(req.body.bookid, function (err) {
-                if (err) {return next(err)};
-                res.redirect('/catalog/books');
-            })
+            for (bookinstance of results.bookinstances) {
+                BookInstance.findByIdAndRemove(bookinstance._id, (err)=>{if(err){return next(err)}});
+            }
         }
+        Book.findByIdAndRemove(req.body.bookid, function (err) {
+            if (err) {return next(err)};
+            res.redirect('/catalog/books');
+        })
     })
 };
 // Display book update form on GET.
@@ -234,6 +237,8 @@ exports.book_update_get = function(req, res, next) {
                 }
             }
         }
+        results.authors = myTools.sortObjectsByValue(results.authors, 'name');
+        results.genres = myTools.sortObjectsByValue(results.genres, 'name');
         res.render('book_form', {title: 'Update Book', authors: results.authors, genres: results.genres, book: results.book});
     });
 };
@@ -292,6 +297,8 @@ exports.book_update_post = [
                         results.genres[i].checked='true';
                     }
                 }
+                results.authors = myTools.sortObjectsByValue(results.authors, 'name');
+                results.genres = myTools.sortObjectsByValue(results.genres, 'name');
                 res.render('book_form', {title: 'Update Book', authors: results.authors, genres: results.genres, book: book, errors: errors.array()});
             });
             return;

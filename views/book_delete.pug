@@ -2,7 +2,7 @@ extends layout
 
 block content
     h1 !{title}: !{book.title}
-  
+    
     p #[strong Author:] 
         a(href=book.author.url) !{book.author.name}
     p #[strong Summary:] !{book.summary}
@@ -14,7 +14,7 @@ block content
                 |, 
 
     if bookinstances.length
-        p #[strong Delete the following book instances before attempting to delete this book.]
+        p #[strong The following book instances will be deleted if you delete this book:]
 
         div(style='margin-left:20px;margin-top:20px')
 
@@ -33,10 +33,11 @@ block content
                     p #[strong Due back:] !{val.due_back_formatted}
                 p #[strong Id:]&nbsp;
                     a(href=val.url) !{val._id}
-    else
-        p Do you really want to delete this Book?
+        br
 
-        form(method='POST', action='')
-            div.form-group
-                input#bookid.form-control(type='hidden', name='bookid', required='true', value=book._id)
-            button.btn.btn-primary(type='submit') Delete
+    p Do you really want to delete this Book?
+
+    form(method='POST', action='')
+        div.form-group
+            input#bookid.form-control(type='hidden', name='bookid', required='true', value=book._id)
+        button.btn.btn-primary(type='submit') Delete

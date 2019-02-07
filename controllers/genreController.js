@@ -3,15 +3,17 @@ var Book = require('../models/book');
 
 var async = require('async');
 
+const myTools = require('../modules/myTools');
+
 const {body, validationResult} = require('express-validator/check');
 const {sanitizeBody} = require('express-validator/filter');
 
 // Display list of all Genre.
 exports.genre_list = function(req, res) {
     Genre.find()
-    .sort([['name', 'ascending']])
     .exec(function(err, list_genre) {
         if (err) { return next(err); };
+        list_genre = myTools.sortObjectsByValue(list_genre, 'name');
         res.render('genre_list', {title: 'Genre List', genre_list: list_genre})
     })
 };
@@ -35,6 +37,7 @@ exports.genre_detail = function(req, res, next) {
             return next(err);
         }
         //Successful, so render
+        results.genre_books = myTools.sortObjectsByValue(results.genre_books, 'title');
         res.render('genre_detail', { title: 'Genre Detail', genre: results.genre, genre_books: results.genre_books } );
     })
 };
@@ -95,6 +98,7 @@ exports.genre_delete_get = function(req, res, next) {
         if (results.genre==null) {
             res.redirect('/catalog/genres');
         }
+        results.books = myTools.sortObjectsByValue(results.books, 'title');
         res.render('genre_delete', {title: 'Delete genre', genre: results.genre, books: results.books});
     })
 };
@@ -112,16 +116,23 @@ exports.genre_delete_post = function(req, res, next) {
         if (err) {return next(err)};
 
         if (results.books.length > 0) {
-            // genre has books. Render in same way as for GET route.
-            res.render('genre_delete', {title: 'Delete Genre', genre: results.genre, books: results.books});
-            return;
-        } else {
-            // genre has no books. Delete object and redirect to the list of genres.
-            Genre.findByIdAndRemove(req.body.genreid, function (err) {
-                if (err) {return next(err)};
-                res.redirect('/catalog/genres');
-            })
+            for (let book of results.books) {
+                let newBook = new Book({
+                    title: book.title,
+                    author: book.author,
+                    summary: book.summary,
+                    isbn: book.isbn,
+                    _id: book._id,
+                    genre: [],
+                });
+                Book.findByIdAndUpdate(newBook._id, newBook, {}, (err) => {if (err) {return next(err)}});
+            }
         }
+        // genre has no books. Delete object and redirect to the list of genres.
+        Genre.findByIdAndRemove(req.body.genreid, function (err) {
+            if (err) {return next(err)};
+            res.redirect('/catalog/genres');
+        })
     })
 };
 

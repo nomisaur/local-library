@@ -1,8 +1,11 @@
 var Author = require('../models/author');
 var Book = require('../models/book');
+const BookInstance = require('../models/bookinstance');
 
 var async = require('async');
 var moment = require('moment');
+
+const myTools = require('../modules/myTools');
 
 const {body, validationResult} = require('express-validator/check');
 const {sanitizeBody} = require('express-validator/filter');
@@ -10,9 +13,9 @@ const {sanitizeBody} = require('express-validator/filter');
 // Display list of all authors
 exports.author_list = function(req, res, next) {
     Author.find()
-    .sort([['family_name', 'ascending']]) //What????? mongoose specific method?
     .exec(function(err, list_authors) {
         if (err) { return next(err) };
+        list_authors = myTools.sortObjectsByValue(list_authors, 'family_name');
         //Successful, so render
         res.render('author_list', {title: 'Author List', author_list: list_authors});
     });
@@ -27,7 +30,6 @@ exports.author_detail = function(req, res, next) {
         },
         authors_books: function(callback) {
             Book.find({'author': req.params.id}, 'title summary')
-            .sort([['title', 'ascending']])
             .exec(callback)
         }
     }, function (err, results) {
@@ -37,6 +39,7 @@ exports.author_detail = function(req, res, next) {
             err.status = 404
             return next(err);
         };
+        results.authors_books = myTools.sortObjectsByValue(results.authors_books, 'title');
         res.render('author_detail', {title: 'Author Detail', author: results.author, author_books: results.authors_books});
     });
 };
@@ -107,6 +110,7 @@ exports.author_delete_get = function(req, res, next) {
         if (results.author==null) {
             res.redirect('/catalog/authors');
         }
+        results.authors_books = myTools.sortObjectsByValue(results.authors_books, 'title');
         res.render('author_delete', {title: 'Delete author', author: results.author, author_books: results.authors_books});
     })
 };
@@ -124,16 +128,26 @@ exports.author_delete_post = function(req, res, next) {
         if (err) {return next(err)};
 
         if (results.authors_books.length > 0) {
-            // Author has books. Render in same way as for GET route.
-            res.render('author_delete', {title: 'Delete Author', author: results.author, author_books: results.authors_books});
-            return;
-        } else {
-            // Author has no books. Delete object and redirect to the list of authors.
-            Author.findByIdAndRemove(req.body.authorid, function deleteAuthor(err) {
-                if (err) {return next(err)};
-                res.redirect('/catalog/authors');
-            })
+            for (book of results.authors_books) {
+                BookInstance.find({'book': book._id}).exec((err, instances) => {
+                    for (instance of instances) {
+                        BookInstance.findByIdAndRemove(instance._id, (err) => {
+                            if (err) {return next(err)};
+                        });
+                        console.log('removing ' + book._id + ' instance: ' + instance._id);
+                    }
+                });
+                Book.findByIdAndRemove(book._id, (err) => {
+                    if (err) {return next(err)};
+                });
+                console.log('removing book ' + book._id)
+            }
         }
+        Author.findByIdAndRemove(req.body.authorid, function deleteAuthor(err) {
+            if (err) {return next(err)};
+            res.redirect('/catalog/authors');
+        })
+        console.log('removing author ' + req.body.authorid)
     })
 };
 

@@ -3,6 +3,7 @@ var Book = require('../models/book');
 
 const moment = require('moment');
 const async = require('async');
+const myTools = require('../modules/myTools');
 
 const {body, validationResult} = require('express-validator/check');
 const {sanitizeBody} = require('express-validator/filter');
@@ -14,8 +15,7 @@ exports.bookinstance_list = function(req, res, next) {
     .exec(function (err, list_bookinstances) {
         if (err) { return next(err); } // Does this end the function early? Is the err passed to the error handler in app.js?
 
-        // this should hopefully sort the books alphabetically
-        list_bookinstances = list_bookinstances.sort((a,b) => a.book.title.localeCompare(b.book.title));
+        list_bookinstances = myTools.sortObjectsByValue(list_bookinstances, 'book.title');
 
         // Successful, so render
         res.render('bookinstance_list', {title: 'Book Instance List,', bookinstance_list: list_bookinstances });
@@ -43,6 +43,7 @@ exports.bookinstance_create_get = function(req, res, next) {
     .exec(function (err, books) {
         if (err) {return next(err)}
         let status_values = BookInstance.schema.path('status').enumValues;
+        books = myTools.sortObjectsByValue(books, 'title');
         res.render('bookinstance_form', {title: 'Create Book Instance', book_list: books, status_values: status_values});
     });
 };
@@ -73,6 +74,7 @@ exports.bookinstance_create_post = [
             .exec(function (err, books) {
                 if (err) {return next(err)};
                 let status_values = BookInstance.schema.path('status').enumValues;
+                books = myTools.sortObjectsByValue(books, 'title');
                 res.render('bookinstance_form', {
                     title: 'Create Book Instance',
                     book_list: books,
@@ -136,6 +138,7 @@ exports.bookinstance_update_get = function(req, res, next) {
             due_back: moment(results.bookinstance.due_back).format('YYYY-MM-DD'),
             _id: results.bookinstance._id,
         };
+        results.book_list = myTools.sortObjectsByValue(results.book_list, 'title');
         res.render('bookinstance_form', {
             title: 'Update Book Instance',
             bookinstance: book_instance,
@@ -173,6 +176,7 @@ exports.bookinstance_update_post = [
             .exec(function (err, books) {
                 if (err) {return next(err)};
                 let status_values = BookInstance.schema.path('status').enumValues;
+                books = myTools.sortObjectsByValue(books, 'title')
                 res.render('bookinstance_form', {
                     title: 'Create Book Instance',
                     book_list: books,

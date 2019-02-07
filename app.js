@@ -6,7 +6,8 @@ var logger = require('morgan');
 
 // set up mongoose connection
 var mongoose = require('mongoose');
-var mongoDB = "mongodb://127.0.0.1:27017/locallibrary";
+//var mongoDB = "mongodb://127.0.0.1:27017/locallibrary";
+var mongoDB = process.env.MONGODB_URI || 'mongodb://<dbuser>:<dbpassword>@ds044679.mlab.com:44679/local_library1';
 // I added the second argument here:
 mongoose.connect(mongoDB, { useNewUrlParser: true });
 mongoose.Promise = global.Promise;

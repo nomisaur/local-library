@@ -134,13 +134,11 @@ exports.author_delete_post = function(req, res, next) {
                         BookInstance.findByIdAndRemove(instance._id, (err) => {
                             if (err) {return next(err)};
                         });
-                        console.log('removing ' + book._id + ' instance: ' + instance._id);
                     }
                 });
                 Book.findByIdAndRemove(book._id, (err) => {
                     if (err) {return next(err)};
                 });
-                console.log('removing book ' + book._id)
             }
         }
         Author.findByIdAndRemove(req.body.authorid, function deleteAuthor(err) {

@@ -117,15 +117,8 @@ exports.genre_delete_post = function(req, res, next) {
 
         if (results.books.length > 0) {
             for (let book of results.books) {
-                let newBook = new Book({
-                    title: book.title,
-                    author: book.author,
-                    summary: book.summary,
-                    isbn: book.isbn,
-                    _id: book._id,
-                    genre: [],
-                });
-                Book.findByIdAndUpdate(newBook._id, newBook, {}, (err) => {if (err) {return next(err)}});
+                book.genre.remove(results.genre._id);
+                book.save((err) => {if (err) {return next(err)}});
             }
         }
         // genre has no books. Delete object and redirect to the list of genres.

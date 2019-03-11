@@ -6,6 +6,7 @@ var BookInstance = require('../models/bookinstance');
 var async = require('async');
 
 const myTools = require('../modules/myTools');
+var he = require('he');
 
 const {body, validationResult} = require('express-validator/check');
 const {sanitizeBody} = require('express-validator/filter');
@@ -237,6 +238,9 @@ exports.book_update_get = function(req, res, next) {
                 }
             }
         }
+        results.book.title = he.decode(results.book.title)
+        results.book.summary = he.decode(results.book.summary)
+
         results.authors = myTools.sortObjectsByValue(results.authors, 'name');
         results.genres = myTools.sortObjectsByValue(results.genres, 'name');
         res.render('book_form', {title: 'Update Book', authors: results.authors, genres: results.genres, book: results.book});

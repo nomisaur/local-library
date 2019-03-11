@@ -2,7 +2,7 @@
 ssh -i jenkins naomisaltis@35.235.102.6 <<EOF
     cd ~/local-library
     git pull
-    npm install - production
+    npm install -production
     pm2 restart all
     exit
 EOF
